@@ -8,19 +8,24 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.media3.common.MediaItem;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.example.displayvideolist.databinding.MovieItemBinding;
 
 import java.util.List;
 
 public class Adaptery extends RecyclerView.Adapter<Adaptery.MyViewHolder>{
-    private final Context mContext;
+    private static Context mContext;
+   private static List<MovieModelClass> mData = null;
 
-    private final List<MovieModelClass> mData;
+   private ExoPlayer m_exoplayer;
 
     public Adaptery(Context mContext, List<MovieModelClass> mData) {
-        this.mContext = mContext;
-        this.mData = mData;
+        Adaptery.mContext = mContext;
+        Adaptery.mData = mData;
     }
 
     /**
@@ -35,7 +40,9 @@ public class Adaptery extends RecyclerView.Adapter<Adaptery.MyViewHolder>{
         View v;
         LayoutInflater inflater = LayoutInflater.from(mContext);
         v = inflater.inflate(R.layout.movie_item,parent,false);
-        return new MyViewHolder(v);
+        MovieItemBinding binding = MovieItemBinding.inflate(inflater, parent, false);
+        return new MyViewHolder(v, mContext);
+        //return new MyViewHolder(binding.getRoot());
     }
 
     /**
@@ -52,6 +59,15 @@ public class Adaptery extends RecyclerView.Adapter<Adaptery.MyViewHolder>{
         Glide.with(mContext)
                 .load(mData.get(position).getThumbnail())
                 .into(holder.thumb);
+        //holder.url.setText(mData.get(position).getUrl());
+        holder.bindMedia(mData.get(position).getUrl());
+
+
+        //holder.bind(position);
+
+
+
+
     }
 
     /**
@@ -62,24 +78,71 @@ public class Adaptery extends RecyclerView.Adapter<Adaptery.MyViewHolder>{
         return mData.size();
     }
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder{
+    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         TextView description;
         ImageView thumb;
 
         TextView subtitle;
         TextView title;
+        TextView url;
+
+        PlayerView playerView;
+        ExoPlayer m_exoPlayer;
+
+        MovieItemBinding binding;
 
 
 
-        public MyViewHolder(@NonNull View itemView) {
+        public MyViewHolder(@NonNull View itemView, Context mContext) {
             super(itemView);
             description = itemView.findViewById(R.id.description_txt);
             subtitle = itemView.findViewById(R.id.subtitle_txt);
             title = itemView.findViewById(R.id.title_txt);
             thumb = itemView.findViewById(R.id.thumb_movie);
+            url = itemView.findViewById(R.id.url_txt);
+            playerView = itemView.findViewById(R.id.player_view);
+            m_exoPlayer = new ExoPlayer.Builder(Adaptery.mContext).build();
+            playerView.setPlayer(m_exoPlayer);
+            //initializePlayer();
+
 
         }
+
+        private void initializePlayer() {
+            m_exoPlayer = new ExoPlayer.Builder(  mContext).build();
+            playerView.setPlayer(m_exoPlayer);
+            binding.playerView.setPlayer(m_exoPlayer);
+        }
+        void bindMedia(String mediaUri) {
+            m_exoPlayer.setMediaItem(MediaItem.fromUri(mediaUri));
+            m_exoPlayer.prepare();
+            //m_exoPlayer.play();
+        }
+
+        public void bind(int position) {
+            MovieModelClass movie = mData.get(position);
+            binding.titleTxt.setText(movie.getTitle());
+            binding.descriptionTxt.setText(movie.getDescription());
+            binding.subtitleTxt.setText(movie.getSubtitle());
+            Glide.with(mContext).load(movie.getThumbnail()).into(binding.thumbMovie);
+            bindMedia(movie.getUrl());
+        }
+
+        // Release player when ViewHolder is recycled
+        public void releasePlayer() {
+            m_exoPlayer.release();
+        }
+
+
+        @Override
+        public void onClick(View v) {
+            // Start playback when item is clicked
+            m_exoPlayer.play();
+
+        }
+
+
     }
 
 
